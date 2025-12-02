@@ -1,12 +1,8 @@
 <?php
 session_start();
-require 'koneksi.php';
 
-// 1. CEK LOGIN (Jika belum login, arahkan ke login.php)
-if (!isset($_SESSION["login"])) {
-    header("Location: login.php");
-    exit;
-}
+// PERBAIKAN 1: Gunakan '../' untuk memanggil file di folder utama (luar folder user)
+require '../admin/koneksi.php';
 
 // 2. LOGIKA UPLOAD GAMBAR
 if (isset($_POST["upload"])) {
@@ -32,8 +28,9 @@ if (isset($_POST["upload"])) {
             // Generate nama unik
             $namaFileBaru = uniqid() . '.' . $ekstensi;
 
-            // Pindahkan file
-            move_uploaded_file($tmpName, 'uploads/' . $namaFileBaru);
+            // PERBAIKAN 2: Simpan gambar ke folder '../uploads/' (folder uploads di root project)
+            // Agar gambar tidak tersimpan di dalam folder 'user'
+            move_uploaded_file($tmpName, '../uploads/' . $namaFileBaru);
 
             // Simpan ke Database sesuai kategori
             if ($kategori == "galeri") {
@@ -42,7 +39,8 @@ if (isset($_POST["upload"])) {
                 mysqli_query($conn, "INSERT INTO klien (nama_file) VALUES ('$namaFileBaru')");
             }
 
-            echo "<script>alert('Berhasil upload foto!'); window.location='index.php';</script>";
+            // PERBAIKAN 3: Redirect kembali ke halaman ini (dashboard.php) bukan index.php
+            echo "<script>alert('Berhasil upload foto!'); window.location='dashboard.php';</script>";
         }
     }
 }
@@ -53,7 +51,7 @@ if (isset($_POST["upload"])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Rezeki Site</title>
+    <title>Home - Rezeki Site</title>
     <style>
         /* --- 1. GLOBAL RESET & BASE STYLES --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -204,11 +202,65 @@ if (isset($_POST["upload"])) {
             background: white;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             transition: transform 0.2s;
+            cursor: pointer; /* Menunjukkan bisa diklik */
         }
         .gallery-item:hover { transform: scale(1.02); }
         .gallery-item img {
             width: 100%; height: 150px;
             object-fit: cover; display: block;
+        }
+
+        /* --- STYLE BARU: MODAL (LIGHTBOX) --- */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 9999; /* Sit on top */
+            padding-top: 50px; /* Location of the box */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            object-fit: contain;
+            border: 2px solid white;
+            border-radius: 5px;
+            animation-name: zoom;
+            animation-duration: 0.6s;
+        }
+
+        @keyframes zoom {
+            from {transform:scale(0)} 
+            to {transform:scale(1)}
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
         }
 
         /* --- 8. FOOTER & RESPONSIVE --- */
@@ -264,29 +316,22 @@ if (isset($_POST["upload"])) {
                     <li><a onclick="showPage('foto-klien')">Foto Klien</a></li>
                 </ul>
                 
-                <h3 class="sidebar-header" onclick="toggleSidebar('menu-user')">
-                    User <span>&#9662;</span>
-                </h3>
-                <ul id="menu-user">
-                    <li>Hi, <b><?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></b></li>
-                    <li><a href="logout.php" style="color:red; font-weight:bold;">Logout</a></li>
-                </ul>
+               
             </aside>
             
             <main class="content" id="content-area">
                 
                 <div id="page-home">
-                    <h2>Selamat Datang, <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>!</h2>
-                    <p>Selamat datang di <b>Rezeki Site</b>. Ini adalah dashboard utama untuk mengelola konten website organisasi kami.</p>
-                    <p>Silakan gunakan menu navigasi di atas atau sidebar di samping kiri untuk mengakses fitur-fitur yang tersedia.</p>
-                    <div style="background:#e0f7fa; padding:15px; border-left:5px solid #00bcd4;">
-                        <strong>Status:</strong> Anda telah berhasil login ke sistem.
+                    <h2>Selamat Datang di Rezeki Site</h2>
+                    <p>Terima kasih telah mengunjungi website resmi kami. <b>Rezeki Site</b> hadir sebagai platform digital yang berdedikasi untuk memberikan informasi dan solusi teknologi terkini.</p>
+                    <p>Silakan jelajahi berbagai layanan, profil, dan dokumentasi kegiatan kami melalui menu navigasi di atas atau sidebar di samping kiri.</p>
+                    <div style="background:#e0f7fa; padding:15px; border-left:5px solid #00bcd4; margin-top:20px;">
+                        <p style="margin-bottom:0;"><strong>Info Terbaru:</strong> Lihat dokumentasi kegiatan terbaru kami di menu Galeri.</p>
                     </div>
                 </div>
                 
                 <div id="page-profile" class="hidden">
                     <h2>Profile Organisasi</h2>
-                    <img src="https://via.placeholder.com/800x300/4a90a4/ffffff?text=Rezeki+Site+Office" alt="Kantor" style="width:100%; border-radius:5px; margin-bottom:15px;">
                     <p>Rezeki Site adalah organisasi teknologi yang berfokus pada pengembangan solusi digital yang inovatif dan relevan.</p>
                     <p>Berdiri sejak tahun 2024, kami telah membantu berbagai UMKM untuk melakukan transformasi digital melalui website yang handal dan desain yang menarik.</p>
                 </div>
@@ -414,25 +459,16 @@ if (isset($_POST["upload"])) {
 
                 <div id="page-galery" class="hidden">
                     <h2>Galery Kegiatan</h2>
-                    <p>Dokumentasi kegiatan organisasi dan event yang telah berlangsung.</p>
+                    <p>Dokumentasi kegiatan organisasi dan event yang telah berlangsung (Klik gambar untuk memperbesar).</p>
                     
-                    <div class="upload-box">
-                        <h4>+ Upload Foto Baru</h4>
-                        <form action="" method="post" enctype="multipart/form-data">
-                            <input type="hidden" name="kategori" value="galeri">
-                            <input type="file" name="gambar" required style="margin-top:10px;">
-                            <br><br>
-                            <button type="submit" name="upload" class="btn-order" style="border:none; cursor:pointer;">Upload</button>
-                        </form>
-                    </div>
-
                     <div class="gallery-grid">
                         <?php
                         $query = mysqli_query($conn, "SELECT * FROM galeri ORDER BY id DESC");
                         if(mysqli_num_rows($query) > 0){
                             while($row = mysqli_fetch_assoc($query)){
                                 echo '<div class="gallery-item">';
-                                echo '<img src="uploads/'.$row['nama_file'].'" alt="Foto Galeri">';
+                                // PERBAIKAN 4: Tambahkan '../' pada src agar mengakses folder uploads di root
+                                echo '<img src="../uploads/'.$row['nama_file'].'" alt="Foto Galeri" onclick="viewImage(this.src)">';
                                 echo '</div>';
                             }
                         } else {
@@ -444,17 +480,7 @@ if (isset($_POST["upload"])) {
                 
                 <div id="page-foto-klien" class="hidden">
                     <h2>Foto Klien Kami</h2>
-                    <p>Klien yang telah mempercayakan proyek digital mereka kepada kami.</p>
-
-                    <div class="upload-box">
-                        <h4>+ Upload Foto Klien</h4>
-                        <form action="" method="post" enctype="multipart/form-data">
-                            <input type="hidden" name="kategori" value="klien">
-                            <input type="file" name="gambar" required style="margin-top:10px;">
-                            <br><br>
-                            <button type="submit" name="upload" class="btn-order" style="border:none; cursor:pointer;">Upload</button>
-                        </form>
-                    </div>
+                    <p>Klien yang telah mempercayakan proyek digital mereka kepada kami (Klik gambar untuk memperbesar).</p>
 
                     <div class="gallery-grid">
                         <?php
@@ -462,7 +488,8 @@ if (isset($_POST["upload"])) {
                         if(mysqli_num_rows($query) > 0){
                             while($row = mysqli_fetch_assoc($query)){
                                 echo '<div class="gallery-item">';
-                                echo '<img src="uploads/'.$row['nama_file'].'" alt="Foto Klien">';
+                                // PERBAIKAN 5: Tambahkan '../' pada src agar mengakses folder uploads di root
+                                echo '<img src="../uploads/'.$row['nama_file'].'" alt="Foto Klien" onclick="viewImage(this.src)">';
                                 echo '</div>';
                             }
                         } else {
@@ -480,41 +507,63 @@ if (isset($_POST["upload"])) {
         </footer>
     </div>
 
+    <div id="imageModal" class="modal">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="img-full">
+    </div>
+
     <script>
         // 1. Fungsi Ganti Halaman
         function showPage(pageName) {
-            // Sembunyikan semua halaman
             const pages = document.querySelectorAll('[id^="page-"]');
             pages.forEach(page => page.classList.add('hidden'));
             
-            // Hapus class 'active' dari semua menu NAVIGASI (atas)
             const navItems = document.querySelectorAll('.nav-menu a');
             navItems.forEach(item => item.classList.remove('active'));
             
-            // Hapus style active dari sidebar
             const sidebarLinks = document.querySelectorAll('.sidebar a');
             sidebarLinks.forEach(link => link.style.fontWeight = 'normal');
 
-            // Tampilkan halaman yang dipilih
             const targetPage = document.getElementById('page-' + pageName);
             if (targetPage) {
                 targetPage.classList.remove('hidden');
             }
             
-            // Set menu NAVIGASI jadi aktif (jika ada di navbar)
             const activeNav = document.getElementById('nav-' + pageName);
             if (activeNav) {
                 activeNav.classList.add('active');
             }
         }
 
-        // 2. Fungsi Dropdown Sidebar (Accordion)
+        // 2. Fungsi Dropdown Sidebar
         function toggleSidebar(menuId) {
             const menu = document.getElementById(menuId);
             if (menu.classList.contains('collapsed')) {
                 menu.classList.remove('collapsed');
             } else {
                 menu.classList.add('collapsed');
+            }
+        }
+
+        // 3. FUNGSI UNTUK MEMBUKA MODAL GAMBAR
+        function viewImage(src) {
+            var modal = document.getElementById("imageModal");
+            var modalImg = document.getElementById("img-full");
+            modal.style.display = "flex"; // Gunakan flex agar gambar di tengah
+            modalImg.src = src;
+        }
+
+        // 4. FUNGSI UNTUK MENUTUP MODAL
+        function closeModal() {
+            var modal = document.getElementById("imageModal");
+            modal.style.display = "none";
+        }
+
+        // Tutup modal jika user klik di luar gambar (di area hitam)
+        window.onclick = function(event) {
+            var modal = document.getElementById("imageModal");
+            if (event.target == modal) {
+                modal.style.display = "none";
             }
         }
     </script>
